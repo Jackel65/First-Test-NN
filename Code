@@ -1,0 +1,177 @@
+
+import torch
+import torch.nn as nn
+
+from torch.utils.data import Dataset, DataLoader
+
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+
+### generating training data
+
+it = []
+
+ot=[]
+
+for i in range(100000):
+    
+    a = random.uniform(0, 1)
+    b= random.uniform(0, 1)
+    c= random.uniform(0, 1)
+    
+    if (a >0.7) and (b< 0.2) and (c>0.7):
+        it.append([np.sin(a*8),np.log(b),c])
+        ot.append(0)
+    elif(a<0.2) and (b<0.3) and (c>0.75):
+        it.append([np.sin(a*8),np.log(b),c])
+        ot.append(1)
+    elif(0.2<a<0.8) and (b>0.25) and (c>0.6):
+        it.append([np.sin(a*8),np.log(b),c])
+        ot.append(2)
+        
+        
+        
+it = np.array(it)
+ot = np.array(ot)
+        
+it_test = []
+ot_test = []
+
+for i in range(10000):
+      a = random.uniform(0, 1)
+      b= random.uniform(0, 1)
+      c= random.uniform(0, 1)  
+        
+      if (a >0.7) and (b < 0.2) and (c>0.7):
+          it_test.append([np.sin(a*8),np.log(b),c])
+          ot_test.append(0)
+      elif(a<0.2) and (b<0.3) and (c>0.75):
+          it_test.append([np.sin(a*8),np.log(b),c])
+          ot_test.append(1)
+      elif(0.2<a<0.8) and (b>0.25) and (c>0.6):
+          it_test.append([np.sin(a*8),np.log(b),c])
+          ot_test.append(2)
+          
+it_test = np.array(it_test)
+ot_test = np.array(ot_test)
+
+
+class Dataprep(Dataset):
+    def __init__(self, inputarr, outputarr):
+        
+        self.listinput = inputarr
+        self.listoutput = outputarr
+        
+    def __len__(self):
+        return len(self.listinput)
+    
+    
+    def __getitem__(self, index):
+        
+        if torch.is_tensor(index):
+            index = index.tolist()
+            
+        return self.listinput[index], self.listoutput[index]
+    
+    
+class NN(nn.Module):
+    
+    def __init__(self):
+        super(NN, self).__init__()
+        
+        self.f1 = nn.Linear(3,10)
+        self.f2 = nn.Linear(10,10)
+        self.f3 = nn.Linear(10,10)
+        self.f4 = nn.Linear(10,3)
+        
+        
+        self.relu = nn.ReLU()
+        
+        
+    def forward(self, x):
+        first = self.f1(x)
+        
+        second = self.relu(first)
+        
+        third = self.f2(second)
+        
+        fourth = self.relu(third)
+        
+        fifth = self.f3(fourth)
+        
+        sixth = self.relu(fifth)
+        
+        seventh = self.f4(sixth)
+        
+        return seventh
+        
+        
+net = NN()
+net = net.double()
+loss_function = nn.CrossEntropyLoss()
+learning_rate = 0.01
+
+optimizer = torch.optim.SGD(net.parameters(), learning_rate, momentum=0.5)
+batch_sz = 20
+            
+train_dataset = Dataprep(it,ot)
+train_loader = DataLoader(dataset = train_dataset, shuffle = True, batch_size = batch_sz)
+
+test_dataset = Dataprep(it_test, ot_test)
+test_loader = DataLoader(dataset=test_dataset)
+
+
+for epoch in range(5):
+    for i, o in train_loader:
+        optimizer.zero_grad()
+        outputs = net(i)
+        loss = loss_function(outputs, o.long())
+        loss.backward()
+        optimizer.step()
+        
+        
+total = 0
+correct = 0
+
+with torch.no_grad():
+    for data in test_loader:
+        i, o =data
+        outputs = net(i)
+        _, predicted = torch.max(outputs.data, 1)
+        total += o.size(0)
+        correct += (predicted == o).sum().item()
+        
+print(100*correct / total)        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
